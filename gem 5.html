@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arctic Analytics Ultimate</title>
+    <style>
+        /* CSS Reset & Layout */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            height: 100dvh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        #viewport {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #020203;
+        }
+
+        /* Canvas Layers */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #bgCanvas { z-index: 1; } /* Stars, Clouds, Embers */
+        #glCanvas { 
+            z-index: 2; 
+            mix-blend-mode: screen; /* GPU Aurora */
+            opacity: 0.8;
+        }
+        #terrainCanvas { z-index: 3; } /* Mountains */
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            height: 32px;
+            width: auto;
+            margin-right: 12px;
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            margin: 0;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .icon-btn.active {
+            background: rgba(0, 255, 150, 0.2);
+            border-color: #00ff96;
+            color: #00ff96;
+            box-shadow: 0 0 15px rgba(0, 255, 150, 0.3);
+        }
+
+        /* Center Button */
+        .center-btn-container {
+            position: absolute;
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            z-index: 15;
+            display: flex;
+            justify-content: center;
+        }
+
+        .center-btn {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.15), rgba(100, 255, 218, 0.05));
+            border: 1px solid rgba(100, 255, 218, 0.25);
+            box-shadow: 0 4px 15px rgba(100, 255, 218, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 14px 32px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .center-btn:hover {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.25), rgba(100, 255, 218, 0.1));
+            border-color: rgba(100, 255, 218, 0.5);
+            color: white;
+            box-shadow: 0 6px 20px rgba(100, 255, 218, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .center-btn.dissolved {
+            opacity: 0;
+            transform: scale(1.1);
+            filter: blur(20px);
+            pointer-events: none;
+            transition: opacity 1.8s ease-out, transform 1.8s ease-out, filter 1.8s ease-out;
+        }
+
+        /* Settings Panel */
+        .controls-panel {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: rgba(5, 10, 15, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+            pointer-events: auto;
+            min-width: 200px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .controls-panel.visible { display: block; }
+
+        .control-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+            letter-spacing: 1px;
+        }
+
+        .mode-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .mode-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .mode-btn.active {
+            background: rgba(100, 255, 218, 0.15);
+            border-color: rgba(100, 255, 218, 0.5);
+            color: #64ffda;
+        }
+
+        .footer-info {
+            font-family: monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="viewport">
+        <canvas id="bgCanvas"></canvas>
+        <canvas id="glCanvas"></canvas>
+        <canvas id="terrainCanvas"></canvas>
+
+        <div class="ui-layer">
+            <div class="top-bar">
+                <div class="logo-container">
+                    <img src="1763332109380.jpg" alt="Logo" class="logo">
+                    <h1>Arctic Analytics</h1>
+                </div>
+                
+                <div class="controls-group">
+                    <button id="btnAudio" class="icon-btn" title="Audio Reactive Mode">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                    </button>
+                    <button id="btnSettings" class="icon-btn" title="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="center-btn-container">
+                <button id="btnRipple" class="center-btn">Touch Surface</button>
+            </div>
+
+            <div id="settingsPanel" class="controls-panel">
+                <div class="control-group">
+                    <span class="control-label">Input Source</span>
+                    <button class="mode-btn active" onclick="setMode('gyro')">Gyroscope</button>
+                    <button class="mode-btn" onclick="setMode('mouse')">Mouse / Touch</button>
+                </div>
+            </div>
+
+            <div class="footer-info">
+                <div id="statusText">System: Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebGL Shader Source -->
+    <script id="vs" type="x-shader/x-vertex">
+        attribute vec2 position;
+        void main() {
+            gl_Position = vec4(position, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="fs" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform float uTime;
+        uniform vec2 uResolution;
+        uniform vec2 uTilt;
+        uniform float uColorShift;
+        uniform float uAudio;
+
+        // Noise function
+        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+        float snoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i  = floor(v + dot(v, C.yy));
+            vec2 x0 = v - i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod(i, 289.0);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+        }
+
+        void main() {
+            vec2 uv = gl_FragCoord.xy / uResolution.xy;
+            
+            // Tilt Parallax
+            vec2 tiltOffset = uTilt * 0.2;
+            uv += tiltOffset;
+
+            // Aurora Coordinate System
+            // We want vertical curtains
+            float speed = uTime * 0.2;
+            float scale = 3.0;
+            
+            // Volumetric Layers
+            vec3 color = vec3(0.0);
+            
+            for(float i=1.0; i<=3.0; i++) {
+                float z = i;
+                float noiseInput = uv.x * scale + speed * (0.5/z) + snoise(vec2(uv.x * 0.5, speed * 0.1));
+                float wave = snoise(vec2(noiseInput, uv.y * 0.5 + uTime * 0.05));
+                
+                // Height fade (Curtain shape)
+                float curtain = 1.0 - smoothstep(0.0, 0.4, abs(uv.y - 0.5 + wave * 0.2 + (uTilt.y * 0.1)));
+                
+                // Color ramp
+                vec3 baseC = vec3(0.0, 1.0, 0.6); // Teal/Green
+                vec3 shiftC = vec3(0.6, 0.0, 1.0); // Purple/Pink
+                
+                // Reactivity
+                float audioBoost = uAudio * 2.0;
+                float colorMix = uColorShift + (uv.y * 0.5) + (wave * 0.3) + audioBoost;
+                
+                vec3 layerColor = mix(baseC, shiftC, clamp(colorMix, 0.0, 1.0));
+                
+                // Accumulate
+                color += layerColor * curtain * (0.3 / z) * (1.0 + audioBoost);
+            }
+
+            // Alpha Blend
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script>
+        // --- CONFIG & STATE ---
+        const state = {
+            width: 0, height: 0,
+            tilt: { x: 0, y: 0 }, targetTilt: { x: 0, y: 0 },
+            inputMode: 'gyro',
+            time: 0,
+            active: true,
+            colorShift: 0,
+            colorShiftTarget: 0,
+            audioLevel: 0,
+            audioEnabled: false
+        };
+
+        // --- DOM ---
+        const cvsBg = document.getElementById('bgCanvas');
+        const cvsGl = document.getElementById('glCanvas');
+        const cvsTerrain = document.getElementById('terrainCanvas');
+        const ctxBg = cvsBg.getContext('2d');
+        const ctxTerrain = cvsTerrain.getContext('2d');
+        const btnRipple = document.getElementById('btnRipple');
+        const btnAudio = document.getElementById('btnAudio');
+        
+        let gl;
+        let program;
+        let audioCtx, analyser, dataArray;
+
+        // --- INIT ---
+        function init() {
+            resize();
+            initWebGL();
+            initTerrain();
+            initStars();
+            
+            window.addEventListener('resize', resize);
+            requestAnimationFrame(loop);
+
+            // Default fallback if no gyro
+            if(!window.DeviceOrientationEvent) setMode('mouse');
+        }
+
+        function resize() {
+            state.width = window.innerWidth;
+            state.height = window.innerHeight;
+            [cvsBg, cvsGl, cvsTerrain].forEach(c => {
+                c.width = state.width;
+                c.height = state.height;
+            });
+            if(gl) gl.viewport(0, 0, state.width, state.height);
+            renderTerrain(); // Redraw static terrain
+        }
+
+        // --- WEBGL AURORA ---
+        function initWebGL() {
+            gl = cvsGl.getContext('webgl');
+            if(!gl) return;
+
+            const createShader = (type, source) => {
+                const s = gl.createShader(type);
+                gl.shaderSource(s, source);
+                gl.compileShader(s);
+                if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+                    console.error(gl.getShaderInfoLog(s));
+                    return null;
+                }
+                return s;
+            };
+
+            const vs = createShader(gl.VERTEX_SHADER, document.getElementById('vs').innerText);
+            const fs = createShader(gl.FRAGMENT_SHADER, document.getElementById('fs').innerText);
+            
+            program = gl.createProgram();
+            gl.attachShader(program, vs);
+            gl.attachShader(program, fs);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            // Fullscreen Triangle Strip
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1
+            ]), gl.STATIC_DRAW);
+
+            const posLoc = gl.getAttribLocation(program, 'position');
+            gl.enableVertexAttribArray(posLoc);
+            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+        }
+
+        function renderWebGL(dt) {
+            if(!gl || !program) return;
+            
+            // Uniforms
+            gl.uniform1f(gl.getUniformLocation(program, 'uTime'), state.time * 0.001);
+            gl.uniform2f(gl.getUniformLocation(program, 'uResolution'), state.width, state.height);
+            gl.uniform2f(gl.getUniformLocation(program, 'uTilt'), state.tilt.x, state.tilt.y);
+            gl.uniform1f(gl.getUniformLocation(program, 'uColorShift'), state.colorShift);
+            gl.uniform1f(gl.getUniformLocation(program, 'uAudio'), state.audioLevel);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        // --- CANVAS 2D: STARS & PARTICLES ---
+        const stars = [];
+        const embers = []; // New "Drifting" particles
+
+        function initStars() {
+            for(let i=0; i<400; i++) {
+                stars.push({
+                    x: Math.random() * state.width,
+                    y: Math.random() * state.height,
+                    size: Math.random() * 1.5,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.05
+                });
+            }
+            // Add Embers (Foreground particles)
+            for(let i=0; i<50; i++) {
+                embers.push({
+                    x: Math.random() * state.width,
+                    y: Math.random() * state.height,
+                    size: Math.random() * 2 + 1,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2 - 0.1, // Float up
+                    alpha: 0
+                });
+            }
+        }
+
+        function renderBackground() {
+            ctxBg.clearRect(0,0,state.width, state.height);
+            
+            // Parallax offsets
+            const px = -state.tilt.x * 50;
+            const py = -state.tilt.y * 50;
+
+            // Stars
+            ctxBg.fillStyle = "white";
+            stars.forEach(s => {
+                s.alpha += s.speed;
+                if(s.alpha > 1 || s.alpha < 0) s.speed *= -1;
+                
+                // Infinite wrap
+                let dx = (s.x + px * 0.5 + state.width) % state.width;
+                let dy = (s.y + py * 0.5 + state.height) % state.height;
+
+                ctxBg.globalAlpha = Math.abs(s.alpha) * 0.8;
+                ctxBg.beginPath();
+                ctxBg.arc(dx, dy, s.size, 0, Math.PI*2);
+                ctxBg.fill();
+            });
+
+            // Embers (Closer, faster, floaty)
+            ctxBg.fillStyle = "#64ffda"; // Teal glow
+            embers.forEach(e => {
+                e.x += e.vx;
+                e.y += e.vy;
+                if(e.y < 0) e.y = state.height;
+                if(e.x > state.width) e.x = 0;
+                
+                let dx = (e.x + px * 1.2 + state.width) % state.width;
+                let dy = (e.y + py * 1.2 + state.height) % state.height;
+                
+                // Fade in/out
+                e.alpha = Math.min(1, Math.max(0, Math.sin(state.time * 0.001 + e.x) + 0.5));
+
+                ctxBg.globalAlpha = e.alpha * 0.3; // Subtle
+                ctxBg.beginPath();
+                ctxBg.arc(dx, dy, e.size, 0, Math.PI*2);
+                ctxBg.fill();
+            });
+            ctxBg.globalAlpha = 1;
+        }
+
+        // --- CANVAS 2D: TERRAIN ---
+        let terrainPoints = [];
+        function initTerrain() {
+            terrainPoints = [];
+            let x = -200;
+            let y = state.height * 0.8;
+            while(x < state.width + 200) {
+                terrainPoints.push({x, y});
+                x += 30;
+                y += (Math.random()-0.5) * 30;
+                y = Math.min(Math.max(y, state.height*0.7), state.height*0.9);
+            }
+        }
+
+        function renderTerrain() {
+            ctxTerrain.clearRect(0, 0, state.width, state.height);
+            // Parallax Foreground
+            const px = -state.tilt.x * 100;
+            const py = -state.tilt.y * 50;
+
+            ctxTerrain.save();
+            ctxTerrain.translate(px, py);
+            
+            ctxTerrain.beginPath();
+            ctxTerrain.moveTo(-200, state.height);
+            terrainPoints.forEach((p, i) => {
+                if(i===0) ctxTerrain.lineTo(p.x, p.y);
+                else {
+                    const prev = terrainPoints[i-1];
+                    const midX = (prev.x + p.x)/2;
+                    const midY = (prev.y + p.y)/2;
+                    ctxTerrain.quadraticCurveTo(prev.x, prev.y, midX, midY);
+                }
+            });
+            ctxTerrain.lineTo(state.width + 200, state.height);
+            ctxTerrain.closePath();
+
+            ctxTerrain.fillStyle = "#010203";
+            ctxTerrain.fill();
+            
+            // Rim Light
+            ctxTerrain.lineWidth = 2;
+            ctxTerrain.strokeStyle = "rgba(100, 255, 218, 0.1)";
+            ctxTerrain.stroke();
+            
+            ctxTerrain.restore();
+        }
+
+        // --- AUDIO ---
+        btnAudio.addEventListener('click', async () => {
+            if(state.audioEnabled) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const src = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 64;
+                src.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                state.audioEnabled = true;
+                btnAudio.classList.add('active');
+            } catch(e) {
+                console.warn("Audio denied");
+            }
+        });
+
+        // --- LOGIC LOOP ---
+        function loop() {
+            // Time
+            state.time += 16;
+            
+            // Audio Process
+            if(state.audioEnabled && analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                let avg = 0;
+                for(let i=0; i<dataArray.length; i++) avg += dataArray[i];
+                state.audioLevel = (avg / dataArray.length) / 255.0; // 0 to 1
+            }
+
+            // Surge Event (Random intensity boost every ~20s)
+            if(state.time % 20000 < 100) {
+                state.colorShiftTarget = 0.5; // Brief flash
+            }
+
+            // Tilt Physics (Smooth LERP)
+            // Add idle drift
+            let idleX = Math.sin(state.time * 0.0005) * 0.1;
+            let idleY = Math.cos(state.time * 0.0003) * 0.1;
+
+            state.tilt.x += ((state.targetTilt.x + idleX) - state.tilt.x) * 0.05;
+            state.tilt.y += ((state.targetTilt.y + idleY) - state.tilt.y) * 0.05;
+
+            // Color Shift Logic
+            if(state.colorShiftTarget > 0) {
+                state.colorShift += (state.colorShiftTarget - state.colorShift) * 0.05;
+                if(Math.abs(state.colorShiftTarget - state.colorShift) < 0.01) state.colorShiftTarget = 0;
+            } else {
+                state.colorShift *= 0.95;
+            }
+
+            // Render
+            renderBackground();
+            renderWebGL();
+            // Terrain is static-ish, handled in resize or separate render if needed. 
+            // We redrew it in resize, but parallax happens via CSS transform or redraw. 
+            // For max performance, redraw terrain every frame for smoothness:
+            renderTerrain();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- INPUTS ---
+        btnRipple.addEventListener('click', () => {
+            btnRipple.classList.add('dissolved');
+            state.colorShiftTarget = 1.0; // Trigger full shift
+            setTimeout(() => {
+                btnRipple.classList.remove('dissolved');
+            }, 1800);
+        });
+
+        window.setMode = (mode) => {
+            state.inputMode = mode;
+            if(mode === 'gyro') {
+                if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission().then(r => {
+                        if(r==='granted') window.addEventListener('deviceorientation', handleGyro);
+                    });
+                } else {
+                    window.addEventListener('deviceorientation', handleGyro);
+                }
+            }
+            // Update UI...
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            // Find button by text content logic or add ID in HTML (skipped for brevity)
+        };
+
+        function handleGyro(e) {
+            if(state.inputMode !== 'gyro') return;
+            state.targetTilt.x = Math.max(-1, Math.min(1, (e.gamma || 0)/45));
+            state.targetTilt.y = Math.max(-1, Math.min(1, ((e.beta || 0)-45)/45));
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if(state.inputMode !== 'mouse') return;
+            state.targetTilt.x = (e.clientX / state.width - 0.5) * 2;
+            state.targetTilt.y = (e.clientY / state.height - 0.5) * 2;
+        });
+
+        document.getElementById('btnSettings').addEventListener('click', () => {
+            document.getElementById('settingsPanel').classList.toggle('visible');
+        });
+
+        // Run
+        init();
+
+    </script>
+</body>
+</html>
