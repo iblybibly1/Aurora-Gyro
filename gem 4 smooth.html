@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aurora Borealis Ultimate</title>
+    <style>
+        /* CSS Reset & Layout */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+            height: 100dvh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        /* Viewport Container */
+        #viewport {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #050505; /* Fallback */
+        }
+
+        /* Canvas Layers (Order matters for Z-index) */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #bgCanvas { z-index: 1; } /* Stars & Clouds & Ripples */
+        #auroraCanvas { 
+            z-index: 2; 
+            mix-blend-mode: screen; /* Critical for light blending */
+            filter: blur(4px); /* Increased blur for softer, realistic look */
+        }
+        #terrainCanvas { z-index: 3; }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: absolute;
+            z-index: 10;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        h1 {
+            font-weight: 200;
+            letter-spacing: 4px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 150, 0.5);
+            margin: 0;
+        }
+
+        /* Settings Toggle */
+        .settings-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            font-size: 0.8rem;
+        }
+
+        /* Controls Panel (Hidden by default) */
+        .controls-panel {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: rgba(10, 20, 30, 0.9);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            display: none;
+            pointer-events: auto;
+            min-width: 200px;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls-panel.visible {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-label {
+            font-size: 0.7rem;
+            color: #aaa;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .mode-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .mode-btn.active {
+            background: rgba(100, 255, 218, 0.2);
+            border-color: #64ffda;
+            color: #64ffda;
+        }
+
+        /* Center Ripple Button Container */
+        .center-btn-container {
+            position: absolute;
+            top: 80%; /* Lowered to not obstruct view */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            z-index: 15;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Professional Button Styling */
+        .center-btn {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.15), rgba(100, 255, 218, 0.05));
+            border: 1px solid rgba(100, 255, 218, 0.25);
+            box-shadow: 0 4px 15px rgba(100, 255, 218, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 14px 32px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            /* Transition for normal hover states */
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .center-btn:hover {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.25), rgba(100, 255, 218, 0.1));
+            border-color: rgba(100, 255, 218, 0.5);
+            color: white;
+            box-shadow: 0 6px 20px rgba(100, 255, 218, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* Slow Dissolve Effect */
+        .center-btn.dissolved {
+            opacity: 0;
+            transform: scale(1.1); /* Subtle scale up */
+            filter: blur(20px); /* Stronger blur to "dissolve" */
+            pointer-events: none;
+            /* Slow, smooth transition for the dissolve effect */
+            transition: opacity 1.8s ease-out, transform 1.8s ease-out, filter 1.8s ease-out;
+        }
+
+        /* Debug Footer */
+        .footer-info {
+            font-family: monospace;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: left;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="viewport">
+        <canvas id="bgCanvas"></canvas>
+        <canvas id="auroraCanvas"></canvas>
+        <canvas id="terrainCanvas"></canvas>
+
+        <div class="ui-layer">
+            <div class="top-bar">
+                <h1>Aurora Live</h1>
+                <button id="btnSettings" class="settings-btn">Controls</button>
+            </div>
+
+            <div class="center-btn-container">
+                <button id="btnRipple" class="center-btn">Touch Surface</button>
+            </div>
+
+            <!-- Settings Dropdown -->
+            <div id="settingsPanel" class="controls-panel">
+                <div class="control-group">
+                    <span class="control-label">Input Source</span>
+                    <button class="mode-btn active" onclick="setMode('gyro')">Gyroscope (Tilt)</button>
+                    <button class="mode-btn" onclick="setMode('mouse')">Mouse / Touch</button>
+                </div>
+                <div class="control-group">
+                    <span class="control-label">Simulation Speed</span>
+                    <button class="mode-btn" onclick="setSpeed('slow')">Slow (Realistic)</button>
+                    <button class="mode-btn" onclick="setSpeed('fast')">Fast (Demo)</button>
+                </div>
+            </div>
+
+            <div class="footer-info">
+                <div id="statusText">System: Initializing...</div>
+                <div id="coordsText">Tilt: 0 | 0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ------------------------------------------------
+           CONFIG & STATE
+           ------------------------------------------------ */
+        const config = {
+            starCount: 600, // More stars
+            cloudCount: 6,
+            auroraRibbons: 2, // Fewer ribbons for cleaner look
+            baseSpeed: 0.0008, // Very slow
+            rippleDuration: 180, // frames (~3 seconds logic loop)
+            drawMargin: 1000 // Extra pixels to draw outside screen to prevent cutoff
+        };
+
+        const state = {
+            width: 0,
+            height: 0,
+            inputMode: 'gyro',
+            speedMult: 1,
+            time: 0,
+            tilt: { x: 0, y: 0 },
+            targetTilt: { x: 0, y: 0 },
+            mouse: { x: 0, y: 0 },
+            active: true,
+            ripples: [],
+            auroraColorShift: 0,
+            auroraShiftDuration: 0
+        };
+
+        // DOM
+        const cvsBg = document.getElementById('bgCanvas');
+        const cvsAurora = document.getElementById('auroraCanvas');
+        const cvsTerrain = document.getElementById('terrainCanvas');
+        const ctxBg = cvsBg.getContext('2d');
+        const ctxAurora = cvsAurora.getContext('2d');
+        const ctxTerrain = cvsTerrain.getContext('2d');
+        
+        const statusText = document.getElementById('statusText');
+        const coordsText = document.getElementById('coordsText');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const btnRipple = document.getElementById('btnRipple');
+
+        /* ------------------------------------------------
+           INIT & RESIZE
+           ------------------------------------------------ */
+        function resize() {
+            state.width = window.innerWidth;
+            state.height = window.innerHeight;
+            [cvsBg, cvsAurora, cvsTerrain].forEach(c => {
+                c.width = state.width;
+                c.height = state.height;
+            });
+            renderBackground();
+            renderTerrain();
+        }
+        window.addEventListener('resize', resize);
+
+        /* ------------------------------------------------
+           MODULE: BACKGROUND (Stars, Clouds & Ripples)
+           ------------------------------------------------ */
+        let stars = [];
+        let clouds = [];
+
+        function initBackground() {
+            stars = [];
+            for(let i=0; i<config.starCount; i++) {
+                stars.push({
+                    x: Math.random() * state.width,
+                    y: Math.random() * state.height,
+                    size: Math.random() ** 3 * 2, // Varied sizes
+                    alpha: Math.random() * 0.7 + 0.1,
+                    twinkle: Math.random() * 0.015
+                });
+            }
+
+            clouds = [];
+            for(let i=0; i<config.cloudCount; i++) {
+                clouds.push({
+                    x: Math.random() * state.width,
+                    y: Math.random() * (state.height * 0.7),
+                    radius: 150 + Math.random() * 400,
+                    color: Math.random() > 0.5 ? 'rgba(20, 10, 50, 0.2)' : 'rgba(10, 20, 40, 0.2)'
+                });
+            }
+        }
+
+        function renderBackground() {
+            ctxBg.fillStyle = "#010103"; // Very dark
+            ctxBg.fillRect(0, 0, state.width, state.height);
+            
+            // 1. Clouds (Atmosphere)
+            // Move opposite to camera look
+            const cloudPx = -state.tilt.x * 30; 
+            const cloudPy = -state.tilt.y * 15;
+
+            clouds.forEach(c => {
+                const grad = ctxBg.createRadialGradient(c.x + cloudPx, c.y + cloudPy, 0, c.x + cloudPx, c.y + cloudPy, c.radius);
+                grad.addColorStop(0, c.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                
+                ctxBg.fillStyle = grad;
+                ctxBg.beginPath();
+                ctxBg.arc(c.x + cloudPx, c.y + cloudPy, c.radius, 0, Math.PI*2);
+                ctxBg.fill();
+            });
+
+            // 2. Stars
+            // Significant move to simulate sky rotation
+            const starPx = -state.tilt.x * 60; 
+            const starPy = -state.tilt.y * 60;
+
+            ctxBg.fillStyle = "white";
+            stars.forEach(s => {
+                s.alpha += s.twinkle;
+                if(s.alpha > 0.9 || s.alpha < 0.2) s.twinkle *= -1;
+                
+                // Wrap logic for infinite scroll illusion
+                let dx = (s.x + starPx + state.width * 2) % state.width;
+                let dy = (s.y + starPy + state.height * 2) % state.height;
+
+                ctxBg.globalAlpha = s.alpha;
+                ctxBg.beginPath();
+                ctxBg.arc(dx, dy, s.size, 0, Math.PI*2);
+                ctxBg.fill();
+            });
+            ctxBg.globalAlpha = 1;
+        }
+
+        /* ------------------------------------------------
+           MODULE: AURORA (Physics)
+           ------------------------------------------------ */
+        function renderAurora() {
+            ctxAurora.clearRect(0, 0, state.width, state.height);
+            
+            const shiftX = -state.tilt.x * 40; 
+            const shiftY = -state.tilt.y * 20;
+
+            // Color Shift
+            if (state.auroraShiftDuration > 0) {
+                state.auroraColorShift = Math.min(1, state.auroraColorShift + 0.02);
+            } else {
+                state.auroraColorShift = Math.max(0, state.auroraColorShift - 0.01);
+            }
+            const intensity = state.auroraColorShift;
+
+            // Loop Ribbons
+            for(let i=0; i<config.auroraRibbons; i++) {
+                
+                const speed = state.time * config.baseSpeed * state.speedMult;
+                ctxAurora.beginPath();
+
+                // UNLIMITED WAVES:
+                // We start drawing from negative margin to width + margin
+                // This prevents edges from clipping during parallax movement
+                const margin = config.drawMargin;
+                const totalDrawWidth = state.width + (margin * 2);
+                const nodeCount = 60; // Increased resolution for wider draw area
+                const spacing = totalDrawWidth / (nodeCount - 1);
+
+                for(let j=0; j<nodeCount; j++) {
+                    const x = -margin + (j * spacing); // Start far left
+                    
+                    // Normalize X relative to screen width for wave phase
+                    const normalizedX = x / state.width;
+                    
+                    // Smoother, lower amplitude waves
+                    const wave1 = Math.sin(normalizedX * 3 + speed + i) * 50;
+                    const wave2 = Math.cos(normalizedX * 8 - speed * 0.5) * 20;
+                    
+                    // Push aurora down to horizon for realism/less distraction
+                    const baseY = state.height * 0.6 + (i * 40);
+                    const y = baseY + wave1 + wave2 + shiftY;
+
+                    const dx = x + shiftX * (1 + i * 0.1);
+
+                    if(j===0) ctxAurora.moveTo(dx, y);
+                    else ctxAurora.lineTo(dx, y);
+                }
+
+                // Fill down/around to ensure no gaps
+                ctxAurora.lineTo(state.width + margin, 0); // Top Right (far out)
+                ctxAurora.lineTo(-margin, 0); // Top Left (far out)
+                ctxAurora.closePath();
+
+                // Colors: Green/Blue standard, shifting to Purple/Red on ripple
+                const grad = ctxAurora.createLinearGradient(0, state.height * 0.2, 0, state.height * 0.8);
+                
+                // Base Colors (Green/Blue)
+                const baseR = 0, baseG = 255, baseB = 150;
+                // Shift Colors (Purple/Pink)
+                const shiftR = 255, shiftG = 50, shiftB = 255;
+                
+                const r = baseR * (1-intensity) + shiftR * intensity;
+                const g = baseG * (1-intensity) + shiftG * intensity;
+                const b = baseB * (1-intensity) + shiftB * intensity;
+
+                // Fades
+                grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`); // Top Fade
+                grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.1)`); 
+                grad.addColorStop(0.8, `rgba(${r}, ${g}, ${b}, 0.3)`); // Brightest at bottom edge
+                grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+                ctxAurora.fillStyle = grad;
+                ctxAurora.fill();
+            }
+        }
+
+        /* ------------------------------------------------
+           MODULE: TERRAIN
+           ------------------------------------------------ */
+        let terrainPoints = [];
+        
+        function initTerrain() {
+            terrainPoints = [];
+            // Generate extra terrain for parallax
+            let x = -500;
+            let y = state.height * 0.85;
+            while(x <= state.width + 500) {
+                terrainPoints.push({x, y});
+                x += 40;
+                y += (Math.random() - 0.5) * 30;
+                y = Math.min(Math.max(y, state.height*0.75), state.height*0.95);
+            }
+        }
+
+        function renderTerrain() {
+            ctxTerrain.clearRect(0, 0, state.width, state.height);
+            
+            // Foreground moves most opposite to look direction
+            const px = -state.tilt.x * 120; 
+            const py = -state.tilt.y * 60;
+
+            ctxTerrain.save();
+            ctxTerrain.translate(px, py);
+
+            ctxTerrain.beginPath();
+            ctxTerrain.moveTo(-500, state.height);
+            terrainPoints.forEach((p, i) => {
+                if(i===0) ctxTerrain.lineTo(p.x, p.y);
+                else {
+                    const prev = terrainPoints[i-1];
+                    const midX = (prev.x + p.x)/2;
+                    const midY = (prev.y + p.y)/2;
+                    ctxTerrain.quadraticCurveTo(prev.x, prev.y, midX, midY);
+                }
+            });
+            ctxTerrain.lineTo(state.width + 500, state.height);
+            ctxTerrain.closePath();
+
+            ctxTerrain.fillStyle = "#020203";
+            ctxTerrain.fill();
+            
+            // Subtle Rim Light
+            ctxTerrain.lineWidth = 1;
+            ctxTerrain.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctxTerrain.stroke();
+
+            ctxTerrain.restore();
+        }
+
+        /* ------------------------------------------------
+           INPUT & LOGIC
+           ------------------------------------------------ */
+        
+        document.getElementById('btnSettings').addEventListener('click', () => {
+            settingsPanel.classList.toggle('visible');
+        });
+
+        window.setMode = (mode) => {
+            state.inputMode = mode;
+            const btns = document.querySelectorAll('.control-group:first-child .mode-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            if(mode === 'gyro') requestSensorPermission();
+            statusText.innerText = `Mode: ${mode.toUpperCase()}`;
+        }
+
+        window.setSpeed = (type) => {
+            state.speedMult = type === 'slow' ? 1 : 5;
+            const btns = document.querySelectorAll('.control-group:last-child .mode-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        btnRipple.addEventListener('click', () => {
+            // 1. Trigger Visual Dissolve
+            btnRipple.classList.add('dissolved');
+
+            // 2. Trigger Aurora Color Shift (Ripple removed)
+            state.auroraShiftDuration = config.rippleDuration;
+
+            // 3. Restore button after effect finishes
+            // Timeout matches the CSS transition duration (1.8s)
+            setTimeout(() => {
+                btnRipple.classList.remove('dissolved');
+            }, 1800);
+        });
+
+        async function requestSensorPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const resp = await DeviceOrientationEvent.requestPermission();
+                    if(resp === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        statusText.innerText = "Sensor: Granted";
+                    } else {
+                        statusText.innerText = "Sensor: Denied";
+                    }
+                } catch(e) { console.error(e); }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+                statusText.innerText = "Sensor: Listening";
+            }
+        }
+
+        function handleOrientation(e) {
+            if(state.inputMode !== 'gyro') return;
+            const gamma = e.gamma || 0; 
+            const beta = e.beta || 0;   
+            state.targetTilt.x = Math.max(-1, Math.min(1, gamma / 45));
+            state.targetTilt.y = Math.max(-1, Math.min(1, (beta - 45) / 45));
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if(state.inputMode !== 'mouse') return;
+            state.targetTilt.x = (e.clientX / state.width - 0.5) * 2;
+            state.targetTilt.y = (e.clientY / state.height - 0.5) * 2;
+        });
+
+        /* ------------------------------------------------
+           MAIN LOOP
+           ------------------------------------------------ */
+        function animate() {
+            if(state.active) {
+                state.time += 16;
+                state.tilt.x += (state.targetTilt.x - state.tilt.x) * 0.05;
+                state.tilt.y += (state.targetTilt.y - state.tilt.y) * 0.05;
+                if (state.auroraShiftDuration > 0) state.auroraShiftDuration--;
+
+                renderBackground(); 
+                renderAurora();     
+                renderTerrain();    
+                coordsText.innerText = `X: ${state.tilt.x.toFixed(2)} | Y: ${state.tilt.y.toFixed(2)}`;
+            }
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+        initBackground();
+        initTerrain();
+        animate();
+
+        if(window.DeviceOrientationEvent && !('requestPermission' in DeviceOrientationEvent)) {
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+    </script>
+</body>
+</html>
