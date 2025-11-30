@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arctic Analytics - Phone Interface</title>
+    <title>Arctic Analytics - Phone Simulator</title>
     <style>
         :root {
             --bg-color: #121212;
-            --phone-bezel: #000000;
-            --phone-edge: #333333;
+            --phone-bezel: #0a0a0a;
+            --phone-edge: #2a2a2a;
+            --screen-radius: 40px;
         }
 
         body {
@@ -30,37 +31,44 @@
         .phone-frame {
             position: relative;
             width: 360px;
-            height: 720px;
+            height: 740px;
             background-color: var(--phone-bezel);
-            border-radius: 50px;
+            border-radius: 55px;
             box-shadow: 
-                0 0 0 4px var(--phone-edge),
-                0 0 0 7px var(--phone-bezel),
+                0 0 0 2px #111,
+                0 0 0 5px var(--phone-edge),
                 0 40px 100px -20px rgba(0,0,0,0.7);
-            padding: 12px;
+            padding: 15px;
             box-sizing: border-box;
             transition: transform 0.3s ease;
+            /* Responsive Scaling */
+            transform-origin: center center;
         }
 
-        /* Hover effect for 3D feel */
+        @media (max-height: 800px) {
+            .phone-frame {
+                transform: scale(0.85);
+            }
+        }
+
         .phone-frame:hover {
-            transform: scale(1.02) translateY(-5px);
             box-shadow: 
-                0 0 0 4px var(--phone-edge),
-                0 0 0 7px var(--phone-bezel),
-                0 50px 120px -20px rgba(0,0,0,0.8);
+                0 0 0 2px #111,
+                0 0 0 5px var(--phone-edge),
+                0 60px 120px -20px rgba(0,0,0,0.8);
         }
 
         /* SCREEN AREA */
         .screen-container {
             width: 100%;
             height: 100%;
-            border-radius: 38px;
+            border-radius: var(--screen-radius);
             overflow: hidden;
-            background: #000;
+            background: #020203;
             position: relative;
-            /* Fix for rounded corners clipping in some browsers */
+            /* Masks to respect corner radius */
             -webkit-mask-image: -webkit-radial-gradient(white, black);
+            mask-image: radial-gradient(white, black);
         }
 
         iframe {
@@ -68,15 +76,16 @@
             height: 100%;
             border: none;
             display: block;
+            background: transparent;
         }
 
-        /* NOTCH / DYNAMIC ISLAND */
+        /* HARDWARE DETAILS */
         .notch {
             position: absolute;
-            top: 20px;
+            top: 25px;
             left: 50%;
             transform: translateX(-50%);
-            width: 100px;
+            width: 96px;
             height: 28px;
             background-color: #000;
             border-radius: 20px;
@@ -84,7 +93,6 @@
             pointer-events: none;
         }
 
-        /* CAMERA LENS DOT */
         .notch::after {
             content: '';
             position: absolute;
@@ -98,46 +106,37 @@
             box-shadow: inset 0 0 2px rgba(255,255,255,0.2);
         }
 
-        /* SIDE BUTTONS */
-        .button-power {
+        .btn-hw {
             position: absolute;
-            right: -10px;
-            top: 180px;
-            width: 6px;
-            height: 50px;
             background: var(--phone-edge);
             border-radius: 4px;
+            width: 4px;
         }
+        .btn-power { right: -6px; top: 200px; height: 60px; }
+        .btn-vol-up { left: -6px; top: 160px; height: 40px; }
+        .btn-vol-down { left: -6px; top: 210px; height: 40px; }
 
-        .button-vol-up {
+        /* GLOSS REFLECTION */
+        .reflection {
             position: absolute;
-            left: -10px;
-            top: 140px;
-            width: 6px;
-            height: 40px;
-            background: var(--phone-edge);
-            border-radius: 4px;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border-radius: var(--screen-radius);
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 200;
         }
 
-        .button-vol-down {
-            position: absolute;
-            left: -10px;
-            top: 190px;
-            width: 6px;
-            height: 40px;
-            background: var(--phone-edge);
-            border-radius: 4px;
-        }
-
-        /* TEXT LABEL */
         .label {
             position: absolute;
-            bottom: -50px;
+            bottom: -40px;
             width: 100%;
             text-align: center;
-            color: rgba(255,255,255,0.4);
-            font-size: 0.9rem;
-            letter-spacing: 1px;
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
         }
     </style>
@@ -146,20 +145,22 @@
 
     <div class="phone-frame">
         <div class="notch"></div>
-        <div class="button-power"></div>
-        <div class="button-vol-up"></div>
-        <div class="button-vol-down"></div>
+        <div class="btn-hw btn-power"></div>
+        <div class="btn-hw btn-vol-up"></div>
+        <div class="btn-hw btn-vol-down"></div>
         
         <div class="screen-container">
-            <iframe id="appFrame" title="App Screen"></iframe>
+            <iframe id="appFrame" title="App Screen" allow="microphone; camera; accelerometer; gyroscope; display-capture"></iframe>
+            <div class="reflection"></div>
         </div>
         
-        <div class="label">Interactive Preview</div>
+        <div class="label">Arctic Analytics</div>
     </div>
 
     <!-- 
-      CONTAINER FOR SOURCE CODE 
-      Using textarea ensures strict text mode, preventing script execution issues.
+      YOUR EXACT CODE STORED HERE 
+      We use a textarea to prevent the browser from executing the scripts immediately 
+      and breaking the page structure. We then inject this into the iframe.
     -->
     <textarea id="sourceCode" style="display: none;">
 <!DOCTYPE html>
@@ -233,7 +234,6 @@
             justify-content: space-between;
             align-items: center;
             pointer-events: auto;
-            margin-top: 25px; /* Added spacing for notch */
         }
 
         .logo-container {
@@ -914,7 +914,7 @@
                     seconds++;
                     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
                     const s = (seconds % 60).toString().padStart(2, '0');
-                    callTimer.innerText = ${m}:${s};
+                    callTimer.innerText = `${m}:${s}`;
                 }, 1000);
             }, 500);
             
@@ -1036,3 +1036,5 @@
 
 </body>
 </html>
+
+
