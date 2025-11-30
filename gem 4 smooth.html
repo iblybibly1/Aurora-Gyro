@@ -3,37 +3,528 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aurora Borealis Ultimate</title>
+    <title>Arctic Analytics Multi-Device</title>
     <style>
-        /* CSS Reset & Layout */
+        /* --- GLOBAL RESET --- */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
-            background-color: #000;
-            overflow: hidden;
+            background-color: #121212;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             color: white;
-            height: 100dvh;
+            height: 100vh;
             width: 100vw;
-            touch-action: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Viewport Container */
-        #viewport {
+        /* --- DEVICE SIMULATOR FRAME --- */
+        #sim-container {
             position: relative;
-            width: 100%;
-            height: 100%;
-            background: #050505; /* Fallback */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background: #000;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
         }
 
-        /* Canvas Layers (Order matters for Z-index) */
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        /* Device Specific Styles */
+        .device-phone {
+            width: 375px; height: 812px;
+            border-radius: 40px; border: 12px solid #1a1a1a;
         }
+        .device-phone::after { /* Notch */
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 150px; height: 25px; background: #1a1a1a;
+            border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; z-index: 100;
+        }
+
+        .device-tablet {
+            width: 1024px; height: 768px;
+            border-radius: 24px; border: 24px solid #1a1a1a;
+        }
+
+        .device-watch {
+            width: 320px; height: 390px;
+            border-radius: 60px; border: 12px solid #1a1a1a;
+        }
+
+        /* --- SCREEN CONTENT --- */
+        #screen-content {
+            width: 100%; height: 100%;
+            overflow: hidden; position: relative;
+            background: #020203; border-radius: inherit;
+            mask-image: -webkit-radial-gradient(white, black);
+            -webkit-mask-image: -webkit-radial-gradient(white, black);
+        }
+
+        /* --- EXTERNAL CONTROLS (Outside Device) --- */
+        #sim-controls {
+            position: fixed; top: 20px; z-index: 1000;
+            background: rgba(30, 30, 30, 0.9);
+            padding: 8px 16px; border-radius: 30px;
+            display: flex; gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .sim-btn {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: #aaa; padding: 8px 16px; border-radius: 20px;
+            cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+        }
+        .sim-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .sim-btn.active { background: #64ffda; color: #000; border-color: #64ffda; font-weight: 600; }
+        .sim-btn.action { border-color: #ff3b30; color: #ff3b30; }
+        .sim-btn.action:hover { background: #ff3b30; color: white; }
+
+        /* --- INTERNAL UI ELEMENTS --- */
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #bgCanvas { z-index: 1; }
+        #auroraCanvas { z-index: 2; mix-blend-mode: screen; filter: blur(4px); opacity: 0.9; }
+        #terrainCanvas { z-index: 3; }
+
+        .ui-layer {
+            position: absolute; z-index: 10; top: 0; left: 0;
+            width: 100%; height: 100%; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px;
+            transition: opacity 0.5s ease;
+        }
+        .ui-layer.hidden { opacity: 0; pointer-events: none; }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; padding-top: 10px; }
+        .logo-container h1 {
+            font-weight: 300; letter-spacing: 2px; font-size: 1rem;
+            text-transform: uppercase; margin: 0; color: rgba(255,255,255,0.9);
+        }
+        .icon-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; width: 36px; height: 36px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); }
+        .icon-btn.active { background: rgba(0,255,150,0.2); border-color: #00ff96; color: #00ff96; }
+
+        /* Main Connect Button */
+        .center-btn-container {
+            position: absolute; top: 80%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: auto; z-index: 15;
+        }
+        .center-btn {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.15), rgba(100, 255, 218, 0.05));
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            color: rgba(255, 255, 255, 0.9); padding: 14px 32px; border-radius: 30px;
+            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s;
+        }
+        .center-btn:hover { background: rgba(100, 255, 218, 0.2); border-color: #64ffda; color: white; }
+        .center-btn.dissolved { opacity: 0; transform: scale(1.5); filter: blur(10px); pointer-events: none; }
+
+        /* --- INCOMING CALL SCREEN --- */
+        #incomingCallScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+        #incomingCallScreen.active { display: flex; opacity: 1; pointer-events: auto; }
+        
+        .caller-id { text-align: center; margin-bottom: 60px; }
+        .caller-name { font-size: 1.8rem; font-weight: 300; letter-spacing: 1px; margin-bottom: 8px; }
+        .caller-type { font-size: 0.9rem; color: #64ffda; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .call-actions { display: flex; gap: 40px; }
+        .call-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: none; color: white;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .call-btn:hover { transform: scale(1.1); }
+        .btn-accept { background: #30d158; animation: pulse 1.5s infinite; }
+        .btn-decline { background: #ff453a; }
+
+        /* --- ACTIVE CALL SCREEN --- */
+        #activeCallScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            display: none; flex-direction: column; justify-content: space-between; align-items: center;
+            padding: 100px 0 60px 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
+        }
+        #activeCallScreen.active { display: flex; opacity: 1; pointer-events: auto; }
+        .timer { font-size: 3rem; font-weight: 200; font-variant-numeric: tabular-nums; }
+        .status-pill { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(48, 209, 88, 0); } 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); } }
+
+        /* Watch Specific Overrides */
+        .device-watch h1 { display: none; }
+        .device-watch .center-btn { font-size: 0.7rem; padding: 10px 20px; }
+        .device-watch .timer { font-size: 2rem; }
+        .device-watch .caller-name { font-size: 1.2rem; }
+        .device-watch .call-btn { width: 50px; height: 50px; }
+    </style>
+</head>
+<body>
+
+    <!-- EXTERNAL CONTROLS -->
+    <div id="sim-controls">
+        <button class="sim-btn active" onclick="app.setDevice('phone', this)">Phone</button>
+        <button class="sim-btn" onclick="app.setDevice('tablet', this)">Tablet</button>
+        <button class="sim-btn" onclick="app.setDevice('watch', this)">Watch</button>
+        <button class="sim-btn action" onclick="app.simulateIncomingCall()">Simulate Call</button>
+    </div>
+
+    <!-- DEVICE CONTAINER -->
+    <div id="sim-container" class="device-phone">
+        <div id="screen-content">
+            
+            <canvas id="bgCanvas"></canvas>
+            <canvas id="auroraCanvas"></canvas>
+            <canvas id="terrainCanvas"></canvas>
+
+            <!-- MAIN HOME UI -->
+            <div class="ui-layer" id="homeUI">
+                <div class="top-bar">
+                    <div class="logo-container"><h1>Arctic Analytics</h1></div>
+                    <div style="display:flex; gap:10px;">
+                        <button id="btnAudio" class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                    </div>
+                </div>
+                
+                <div class="center-btn-container">
+                    <button id="btnConnect" class="center-btn">Connect</button>
+                </div>
+                <div style="font-family:monospace; font-size:10px; color:#555; position:absolute; bottom:20px; width:100%; text-align:center;">System: Ready</div>
+            </div>
+
+            <!-- INCOMING CALL UI -->
+            <div id="incomingCallScreen">
+                <div class="caller-id">
+                    <div class="caller-name">Arctic Node</div>
+                    <div class="caller-type">Incoming Secure Connection...</div>
+                </div>
+                <div class="call-actions">
+                    <button class="call-btn btn-decline" onclick="app.declineCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+                    <button class="call-btn btn-accept" onclick="app.acceptCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
+                </div>
+            </div>
+
+            <!-- ACTIVE CALL UI -->
+            <div id="activeCallScreen">
+                <div style="text-align:center">
+                    <div class="caller-name" style="font-size:1.2rem;">Arctic Node</div>
+                    <div class="timer" id="callTimer">00:00</div>
+                    <div class="status-pill">Encrypted Channel</div>
+                </div>
+                <button class="call-btn btn-decline" style="width:60px; height:60px;" onclick="app.endCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- APP CONTROLLER ---
+        const app = {
+            state: {
+                width: 0, height: 0, tilt: { x: 0, y: 0 }, targetTilt: { x: 0, y: 0 },
+                gyroSensitivity: 2.0, inputMode: 'gyro', time: 0, 
+                colorShift: 0, colorShiftTarget: 0, 
+                audioLevel: 0, audioEnabled: false, audioStream: null, 
+                callState: 'idle'
+            },
+            
+            dom: {
+                screen: document.getElementById('screen-content'),
+                container: document.getElementById('sim-container'),
+                homeUI: document.getElementById('homeUI'),
+                incomingUI: document.getElementById('incomingCallScreen'),
+                activeUI: document.getElementById('activeCallScreen'),
+                callTimer: document.getElementById('callTimer'),
+                btnConnect: document.getElementById('btnConnect'),
+                btnAudio: document.getElementById('btnAudio')
+            },
+
+            // --- LIFECYCLE ---
+            init() {
+                this.resize();
+                this.graphics.init();
+                this.bindEvents();
+                this.setDevice('phone', document.querySelector('.sim-btn.active'));
+                
+                // Fallback to mouse if no gyro
+                if(!window.DeviceOrientationEvent) this.state.inputMode = 'mouse';
+                
+                requestAnimationFrame(() => this.loop());
+            },
+
+            setDevice(type, btn) {
+                this.dom.container.className = 'device-' + type;
+                document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
+                if(btn) btn.classList.add('active');
+                setTimeout(() => this.resize(), 550); 
+            },
+
+            resize() {
+                const s = this.state;
+                s.width = this.dom.screen.clientWidth;
+                s.height = this.dom.screen.clientHeight;
+                this.graphics.resize(s.width, s.height);
+            },
+
+            // --- CALL LOGIC ---
+            simulateIncomingCall() {
+                if(this.state.callState !== 'idle') return;
+                this.state.callState = 'incoming';
+                this.dom.homeUI.classList.add('hidden');
+                this.dom.incomingUI.classList.add('active');
+                this.state.colorShiftTarget = 0.3; // Slight alert color
+            },
+
+            acceptCall() {
+                if(this.state.callState !== 'incoming') return;
+                this.state.callState = 'active';
+                this.dom.incomingUI.classList.remove('active');
+                this.dom.activeUI.classList.add('active');
+                
+                let sec = 0;
+                this.callInterval = setInterval(() => {
+                    sec++;
+                    const m = Math.floor(sec/60).toString().padStart(2,'0');
+                    const s = (sec%60).toString().padStart(2,'0');
+                    this.dom.callTimer.innerText = `${m}:${s}`;
+                }, 1000);
+
+                if(!this.state.audioEnabled) this.toggleAudio();
+                this.state.colorShiftTarget = 0.8;
+            },
+
+            declineCall() {
+                this.endCall();
+            },
+
+            endCall() {
+                this.state.callState = 'idle';
+                clearInterval(this.callInterval);
+                this.dom.callTimer.innerText = "00:00";
+                this.dom.incomingUI.classList.remove('active');
+                this.dom.activeUI.classList.remove('active');
+                this.dom.homeUI.classList.remove('hidden');
+                this.dom.btnConnect.classList.remove('dissolved');
+                this.state.colorShiftTarget = 0.0;
+                if(this.state.audioEnabled) this.toggleAudio();
+            },
+
+            // --- GRAPHICS ENGINE (Canvas 2D) ---
+            graphics: {
+                ctxBg: null, ctxAurora: null, ctxTerrain: null,
+                stars: [], ripples: [],
+
+                init() {
+                    this.ctxBg = document.getElementById('bgCanvas').getContext('2d');
+                    this.ctxAurora = document.getElementById('auroraCanvas').getContext('2d');
+                    this.ctxTerrain = document.getElementById('terrainCanvas').getContext('2d');
+                    this.initAssets();
+                },
+
+                initAssets() {
+                    for(let i=0; i<400; i++) this.stars.push({x:Math.random(), y:Math.random(), s:Math.random()*1.5, a:Math.random(), t:Math.random()*0.02});
+                },
+
+                resize(w, h) {
+                    ['bgCanvas','auroraCanvas','terrainCanvas'].forEach(id => {
+                        const el = document.getElementById(id);
+                        el.width = w; el.height = h;
+                    });
+                    this.renderTerrain(w, h);
+                },
+
+                render(s) {
+                    const w = s.width, h = s.height;
+                    
+                    // 1. Background
+                    const ctx = this.ctxBg;
+                    ctx.clearRect(0,0,w,h);
+                    const px = -s.tilt.x * 50, py = -s.tilt.y * 50;
+                    ctx.fillStyle = "white";
+                    this.stars.forEach(st => {
+                        st.a += st.t; if(st.a>1||st.a<0.2) st.t*=-1;
+                        let dx = (st.x * w + px + w)%w;
+                        let dy = (st.y * h + py + h)%h;
+                        ctx.globalAlpha = st.a; ctx.beginPath(); ctx.arc(dx, dy, st.s, 0, 6.28); ctx.fill();
+                    });
+                    ctx.globalAlpha = 1;
+
+                    // 2. Aurora (2D Ribbon)
+                    const ctxA = this.ctxAurora;
+                    ctxA.clearRect(0,0,w,h);
+                    
+                    // Voice Inversion
+                    let hueShift = 0;
+                    // If call active and audio detected, shift colors
+                    if(s.callState === 'active' && s.audioLevel > 0.05) {
+                        hueShift = 1; 
+                    }
+
+                    const shiftX = -s.tilt.x * 40; const shiftY = -s.tilt.y * 20;
+                    const speed = s.time * 0.0008;
+                    const shift = s.colorShift;
+
+                    for(let i=0; i<2; i++) {
+                        ctxA.beginPath();
+                        const margin = 200;
+                        const points = 40;
+                        const spacing = (w + margin*2)/points;
+                        
+                        for(let j=0; j<=points; j++) {
+                            const x = -margin + j*spacing;
+                            const normX = x/w;
+                            const wave = Math.sin(normX*3 + speed + i)*50 + Math.cos(normX*8 - speed*0.5)*20;
+                            const baseY = h*0.6 + i*40;
+                            const y = baseY + wave + shiftY;
+                            const dx = x + shiftX*(1+i*0.1);
+                            if(j===0) ctxA.moveTo(dx, y); else ctxA.lineTo(dx, y);
+                        }
+                        
+                        ctxA.lineTo(w+margin, 0); ctxA.lineTo(-margin, 0); ctxA.closePath();
+                        
+                        // Gradient Construction
+                        const grad = ctxA.createLinearGradient(0, h*0.2, 0, h*0.8);
+                        
+                        // Base Colors
+                        let r1=0, g1=255, b1=150; // Teal
+                        let r2=255, g2=50, b2=255; // Pink/Purple
+                        
+                        // Mix based on state shift
+                        let r = r1*(1-shift) + r2*shift;
+                        let g = g1*(1-shift) + g2*shift;
+                        let b = b1*(1-shift) + b2*shift;
+
+                        // Voice Inversion (Red/Orange)
+                        if(hueShift > 0) {
+                            // Blend into Orange-Red based on volume
+                            let intensity = Math.min(1, s.audioLevel * 3);
+                            r = r*(1-intensity) + 255*intensity;
+                            g = g*(1-intensity) + 50*intensity;
+                            b = b*(1-intensity) + 0*intensity;
+                        }
+
+                        grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+                        grad.addColorStop(0.4, `rgba(${r},${g},${b},0.1)`);
+                        grad.addColorStop(0.8, `rgba(${r},${g},${b},0.3)`);
+                        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+                        
+                        ctxA.fillStyle = grad; ctxA.fill();
+                    }
+
+                    // 3. Terrain Parallax
+                    this.renderTerrain(w, h, s.tilt);
+                },
+
+                renderTerrain(w, h, tilt) {
+                    const ctx = this.ctxTerrain;
+                    ctx.clearRect(0,0,w,h);
+                    if(!tilt) tilt = {x:0, y:0};
+                    const px = -tilt.x * 100; const py = -tilt.y * 50;
+                    ctx.save(); ctx.translate(px, py);
+                    ctx.beginPath(); ctx.moveTo(-200, h*0.8);
+                    
+                    let x = -200; let y = h*0.85;
+                    let seed = 1; const rand = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); }
+                    while(x < w+200) {
+                        let nx = x+40; let ny = y + (rand()-0.5)*30;
+                        ny = Math.min(Math.max(ny, h*0.75), h*0.95);
+                        ctx.quadraticCurveTo(x, y, (x+nx)/2, (y+ny)/2);
+                        x = nx; y = ny;
+                    }
+                    ctx.lineTo(w+200, h); ctx.lineTo(-200, h); ctx.closePath();
+                    ctx.fillStyle = "#010101"; ctx.fill(); 
+                    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.stroke();
+                    ctx.restore();
+                }
+            },
+
+            // --- AUDIO & INPUT ---
+            async toggleAudio() {
+                if(this.state.audioEnabled) {
+                    if(this.audioStream) this.audioStream.getTracks().forEach(t=>t.stop());
+                    this.state.audioEnabled = false;
+                    this.dom.btnAudio.classList.remove('active');
+                } else {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        this.audioStream = stream;
+                        this.audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+                        const src = this.audioCtx.createMediaStreamSource(stream);
+                        this.analyser = this.audioCtx.createAnalyser();
+                        this.analyser.fftSize = 64;
+                        src.connect(this.analyser);
+                        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                        this.state.audioEnabled = true;
+                        this.dom.btnAudio.classList.add('active');
+                    } catch(e) { console.warn("Mic denied"); }
+                }
+            },
+
+            bindEvents() {
+                window.addEventListener('mousemove', e => {
+                    if(this.state.inputMode!=='mouse') return;
+                    const rect = this.dom.screen.getBoundingClientRect();
+                    this.state.targetTilt.x = ((e.clientX - rect.left)/this.state.width - 0.5)*2;
+                    this.state.targetTilt.y = ((e.clientY - rect.top)/this.state.height - 0.5)*2;
+                });
+                
+                // Gyro Init
+                window.addEventListener('deviceorientation', e => {
+                    if(this.state.inputMode==='gyro') {
+                        this.state.targetTilt.x = Math.max(-1, Math.min(1, (e.gamma||0)/45));
+                        this.state.targetTilt.y = Math.max(-1, Math.min(1, ((e.beta||0)-45)/45));
+                    }
+                });
+
+                this.dom.btnConnect.addEventListener('click', () => {
+                    // Manual triggering via main button
+                    this.simulateIncomingCall();
+                });
+
+                this.dom.btnAudio.addEventListener('click', () => this.toggleAudio());
+            },
+
+            loop() {
+                const s = this.state;
+                s.time += 16;
+                
+                // Audio Process
+                if(s.audioEnabled && this.analyser) {
+                    this.analyser.getByteFrequencyData(this.dataArray);
+                    let sum = 0; for(let i=0; i<this.dataArray.length; i++) sum+=this.dataArray[i];
+                    s.audioLevel = (sum / this.dataArray.length) / 255.0;
+                }
+
+                // Physics
+                s.tilt.x += (s.targetTilt.x - s.tilt.x) * 0.05;
+                s.tilt.y += (s.targetTilt.y - s.tilt.y) * 0.05;
+
+                // Color Shift Transition
+                if(s.colorShiftTarget > 0) {
+                    s.colorShift += (s.colorShiftTarget - s.colorShift) * 0.05;
+                    if(Math.abs(s.colorShiftTarget - s.colorShift) < 0.01 && s.callState==='idle') s.colorShiftTarget = 0;
+                } else { s.colorShift *= 0.95; }
+
+                this.graphics.render(16, s);
+                requestAnimationFrame(() => this.loop());
+            }
+        };
+
+        app.init();
+    </script>
+</body>
+</html>
+
+
 
         #bgCanvas { z-index: 1; } /* Stars & Clouds & Ripples */
         #auroraCanvas { 
@@ -596,4 +1087,5 @@
 
     </script>
 </body>
+
 </html>
