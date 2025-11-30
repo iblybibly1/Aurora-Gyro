@@ -29,28 +29,29 @@
             justify-content: center;
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
             background: #000;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            margin-bottom: 60px; /* Space for controls */
         }
 
         /* Device Frames */
         .device-phone {
             width: 375px; height: 812px;
-            border-radius: 40px; border: 12px solid #1a1a1a;
+            border-radius: 45px; border: 14px solid #1a1a1a;
         }
         .device-phone::after { /* Notch */
             content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 150px; height: 25px; background: #1a1a1a;
-            border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; z-index: 100;
+            width: 160px; height: 28px; background: #1a1a1a;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 100;
         }
 
         .device-tablet {
             width: 1024px; height: 768px;
-            border-radius: 24px; border: 24px solid #1a1a1a;
+            border-radius: 28px; border: 24px solid #1a1a1a;
         }
 
         .device-watch {
-            width: 320px; height: 390px;
-            border-radius: 60px; border: 12px solid #1a1a1a;
+            width: 300px; height: 360px;
+            border-radius: 50px; border: 12px solid #2a2a2a;
         }
 
         /* --- SCREEN CONTENT --- */
@@ -58,33 +59,35 @@
             width: 100%; height: 100%;
             overflow: hidden; position: relative;
             background: #020203; border-radius: inherit;
+            /* Webkit mask prevents overflowing content from looking square in rounded frames */
             mask-image: -webkit-radial-gradient(white, black);
             -webkit-mask-image: -webkit-radial-gradient(white, black);
         }
 
-        /* --- EXTERNAL CONTROLS --- */
+        /* --- EXTERNAL CONTROLS (Moved to Bottom) --- */
         #sim-controls {
-            position: fixed; top: 20px; z-index: 1000;
-            background: rgba(30, 30, 30, 0.9);
-            padding: 8px 16px; border-radius: 30px;
-            display: flex; gap: 10px;
-            backdrop-filter: blur(10px);
+            position: fixed; bottom: 20px; z-index: 1000;
+            background: rgba(30, 30, 30, 0.8);
+            padding: 10px 20px; border-radius: 40px;
+            display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+            backdrop-filter: blur(15px);
             border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .sim-btn {
             background: transparent; border: 1px solid rgba(255,255,255,0.2);
-            color: #aaa; padding: 8px 16px; border-radius: 20px;
-            cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+            color: #aaa; padding: 10px 20px; border-radius: 25px;
+            cursor: pointer; font-size: 0.85rem; transition: all 0.2s; font-weight: 500;
         }
         .sim-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-        .sim-btn.active { background: #64ffda; color: #000; border-color: #64ffda; font-weight: 600; }
+        .sim-btn.active { background: #64ffda; color: #000; border-color: #64ffda; font-weight: 700; }
         .sim-btn.action { border-color: #ff3b30; color: #ff3b30; }
         .sim-btn.action:hover { background: #ff3b30; color: white; }
 
         /* --- INTERNAL UI ELEMENTS --- */
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #bgCanvas { z-index: 1; }
-        #auroraCanvas { z-index: 2; mix-blend-mode: screen; filter: blur(6px); opacity: 0.8; }
+        #auroraCanvas { z-index: 2; mix-blend-mode: screen; filter: blur(5px); opacity: 0.9; }
         #terrainCanvas { z-index: 3; }
 
         .ui-layer {
@@ -96,53 +99,68 @@
         .ui-layer.hidden { opacity: 0; pointer-events: none; }
 
         /* Top Bar */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; padding-top: 10px; }
+        .top-bar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            pointer-events: auto; padding-top: 35px; /* Space for Notch */
+        }
+        .logo-container {
+            display: flex; align-items: center;
+            background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(4px);
+        }
         .logo-container h1 {
-            font-weight: 300; letter-spacing: 2px; font-size: 1rem;
+            font-weight: 400; letter-spacing: 1px; font-size: 0.9rem;
             text-transform: uppercase; margin: 0; color: rgba(255,255,255,0.9);
         }
+        
+        .controls-group { display: flex; gap: 8px; }
         .icon-btn {
             background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            color: white; width: 36px; height: 36px; border-radius: 50%;
+            color: white; width: 38px; height: 38px; border-radius: 50%;
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             transition: all 0.3s;
         }
-        .icon-btn:hover { background: rgba(255,255,255,0.2); }
-        .icon-btn.active { background: rgba(0,255,150,0.2); border-color: #00ff96; color: #00ff96; }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+        .icon-btn.active { background: rgba(0,255,150,0.2); border-color: #00ff96; color: #00ff96; box-shadow: 0 0 10px rgba(0,255,150,0.3); }
 
-        /* Main Action Button */
+        /* Main Connect Button */
         .center-btn-container {
             position: absolute; top: 80%; left: 50%; transform: translate(-50%, -50%);
             pointer-events: auto; z-index: 15;
         }
         .center-btn {
-            background: linear-gradient(135deg, rgba(100, 255, 218, 0.15), rgba(100, 255, 218, 0.05));
-            border: 1px solid rgba(100, 255, 218, 0.3);
-            color: rgba(255, 255, 255, 0.9); padding: 14px 32px; border-radius: 30px;
-            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px;
-            cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s;
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.2), rgba(100, 255, 218, 0.05));
+            border: 1px solid rgba(100, 255, 218, 0.4);
+            color: #e0faff; padding: 16px 40px; border-radius: 40px;
+            font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;
+            cursor: pointer; backdrop-filter: blur(12px); transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        .center-btn:hover { background: rgba(100, 255, 218, 0.2); border-color: #64ffda; color: white; }
-        .center-btn.dissolved { opacity: 0; transform: scale(1.5); filter: blur(10px); pointer-events: none; }
+        .center-btn:hover { 
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.3), rgba(100, 255, 218, 0.1)); 
+            border-color: #64ffda; color: white; transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(100, 255, 218, 0.2);
+        }
+        .center-btn.dissolved { opacity: 0; transform: scale(2); filter: blur(20px); pointer-events: none; }
 
         /* --- INCOMING CALL SCREEN --- */
         #incomingCallScreen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30;
             display: none; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            background: rgba(5, 10, 15, 0.85); backdrop-filter: blur(15px);
             opacity: 0; transition: opacity 0.5s ease;
         }
         #incomingCallScreen.active { display: flex; opacity: 1; pointer-events: auto; }
         
-        .caller-id { text-align: center; margin-bottom: 60px; }
-        .caller-name { font-size: 1.8rem; font-weight: 300; letter-spacing: 1px; margin-bottom: 8px; }
-        .caller-type { font-size: 0.9rem; color: #64ffda; text-transform: uppercase; letter-spacing: 2px; }
+        .caller-id { text-align: center; margin-bottom: 80px; animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .caller-name { font-size: 2rem; font-weight: 300; letter-spacing: 1px; margin-bottom: 10px; }
+        .caller-type { font-size: 0.8rem; color: #64ffda; text-transform: uppercase; letter-spacing: 3px; font-weight: 600; }
         
-        .call-actions { display: flex; gap: 40px; }
+        .call-actions { display: flex; gap: 50px; }
         .call-btn {
-            width: 70px; height: 70px; border-radius: 50%; border: none; color: white;
+            width: 75px; height: 75px; border-radius: 50%; border: none; color: white;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .call-btn:hover { transform: scale(1.1); }
         .btn-accept { background: #30d158; animation: pulse 1.5s infinite; }
@@ -152,41 +170,51 @@
         #activeCallScreen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
             display: none; flex-direction: column; justify-content: space-between; align-items: center;
-            padding: 100px 0 60px 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
+            padding: 120px 0 60px 0; opacity: 0; transition: opacity 0.5s ease; pointer-events: none;
         }
         #activeCallScreen.active { display: flex; opacity: 1; pointer-events: auto; }
-        .timer { font-size: 3rem; font-weight: 200; font-variant-numeric: tabular-nums; }
-        .status-pill { background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; }
+        .timer { font-size: 4rem; font-weight: 100; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+        .status-pill { 
+            background: rgba(255,255,255,0.1); padding: 6px 18px; border-radius: 20px; 
+            font-size: 0.75rem; margin-top: 15px; border: 1px solid rgba(255,255,255,0.1);
+            text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.7);
+        }
 
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(48, 209, 88, 0); } 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(48, 209, 88, 0); } 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Settings Panel */
         #settingsPanel {
-            position: absolute; top: 70px; right: 20px; width: 200px;
-            background: rgba(20,20,20,0.95); padding: 15px; border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1); display: none; pointer-events: auto;
+            position: absolute; top: 80px; right: 20px; width: 220px;
+            background: rgba(20,20,20,0.95); padding: 15px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.15); display: none; pointer-events: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform-origin: top right;
+            animation: scaleIn 0.2s ease-out;
         }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
         #settingsPanel.visible { display: block; }
-        .mode-btn { width: 100%; padding: 8px; margin-bottom: 5px; background: rgba(255,255,255,0.1); border: none; color: #ccc; border-radius: 4px; cursor: pointer; }
-        .mode-btn.active { background: rgba(100, 255, 218, 0.2); color: #64ffda; }
+        .mode-btn { width: 100%; padding: 10px; margin-bottom: 5px; background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #ccc; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.85rem;}
+        .mode-btn:hover { background: rgba(255,255,255,0.1); }
+        .mode-btn.active { background: rgba(100, 255, 218, 0.15); border-color: #64ffda; color: #64ffda; font-weight: bold; }
 
-        /* Watch Specific Overrides */
-        .device-watch h1 { display: none; }
-        .device-watch .center-btn { font-size: 0.7rem; padding: 10px 20px; }
-        .device-watch .timer { font-size: 2rem; }
+        /* Tablet Override */
+        .device-tablet .top-bar { padding-top: 20px; }
+        
+        /* Watch Override */
+        .device-watch .top-bar { padding-top: 25px; padding-left: 10px; padding-right: 10px;}
+        .device-watch .logo-container h1 { display: none; }
+        .device-watch .logo-container { padding: 5px; border-radius: 50%; }
+        .device-watch .center-btn { font-size: 0.75rem; padding: 12px 24px; }
+        .device-watch .timer { font-size: 2.5rem; }
         .device-watch .caller-name { font-size: 1.2rem; }
-        .device-watch .call-btn { width: 50px; height: 50px; }
+        .device-watch .call-btn { width: 55px; height: 55px; }
+        .device-watch .call-actions { gap: 20px; }
+
+        .footer-info { font-family: monospace; font-size: 10px; color: rgba(255, 255, 255, 0.4); margin-bottom: 5px;}
     </style>
 </head>
 <body>
-
-    <!-- EXTERNAL CONTROLS -->
-    <div id="sim-controls">
-        <button class="sim-btn active" onclick="app.setDevice('phone', this)">Phone</button>
-        <button class="sim-btn" onclick="app.setDevice('tablet', this)">Tablet</button>
-        <button class="sim-btn" onclick="app.setDevice('watch', this)">Watch</button>
-        <button class="sim-btn action" onclick="app.simulateIncomingCall()">Simulate Call</button>
-    </div>
 
     <!-- DEVICE CONTAINER -->
     <div id="sim-container" class="device-phone">
@@ -199,14 +227,19 @@
             <!-- MAIN HOME UI -->
             <div class="ui-layer" id="homeUI">
                 <div class="top-bar">
-                    <div class="logo-container"><h1>Arctic Analytics</h1></div>
-                    <div style="display:flex; gap:10px;">
-                        <button id="btnAudio" class="icon-btn" title="Toggle Audio"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                        <button id="btnSettings" class="icon-btn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+                    <div class="logo-container">
+                        <!-- Simple Icon for Watch Mode -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px; display:inline-block;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        <h1>Arctic Analytics</h1>
+                    </div>
+                    <div class="controls-group">
+                        <button id="btnAudio" class="icon-btn" title="Microphone Access"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                        <button id="btnSettings" class="icon-btn" title="Input Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
                     </div>
                 </div>
                 
                 <div id="settingsPanel">
+                    <div style="margin-bottom:10px; font-size:0.7rem; color:#888; text-transform:uppercase;">Motion Control</div>
                     <button class="mode-btn active" onclick="app.setMode('gyro', this)">Gyroscope</button>
                     <button class="mode-btn" onclick="app.setMode('mouse', this)">Mouse / Touch</button>
                 </div>
@@ -214,7 +247,10 @@
                 <div class="center-btn-container">
                     <button id="btnConnect" class="center-btn">Connect</button>
                 </div>
-                <div style="font-family:monospace; font-size:10px; color:#555; position:absolute; bottom:20px; width:100%; text-align:center;">System: Ready</div>
+                
+                <div class="footer-info">
+                    <div id="statusText">System: Ready</div>
+                </div>
             </div>
 
             <!-- INCOMING CALL UI -->
@@ -224,22 +260,31 @@
                     <div class="caller-type">Incoming Secure Connection...</div>
                 </div>
                 <div class="call-actions">
-                    <button class="call-btn btn-decline" onclick="app.declineCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
-                    <button class="call-btn btn-accept" onclick="app.acceptCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
+                    <button class="call-btn btn-decline" onclick="app.declineCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+                    <button class="call-btn btn-accept" onclick="app.acceptCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
                 </div>
             </div>
 
             <!-- ACTIVE CALL UI -->
             <div id="activeCallScreen">
                 <div style="text-align:center">
-                    <div class="caller-name" style="font-size:1.2rem;">Arctic Node</div>
+                    <div class="caller-name" style="font-size:1.4rem; margin-bottom:5px;">Arctic Node</div>
                     <div class="timer" id="callTimer">00:00</div>
                     <div class="status-pill">Encrypted Channel</div>
                 </div>
-                <button class="call-btn btn-decline" style="width:60px; height:60px;" onclick="app.endCall()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+                <button class="call-btn btn-decline" style="width:65px; height:65px;" onclick="app.endCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
             </div>
 
         </div>
+    </div>
+
+    <!-- EXTERNAL CONTROLS (Bottom) -->
+    <div id="sim-controls">
+        <button class="sim-btn active" onclick="app.setDevice('phone', this)">Phone</button>
+        <button class="sim-btn" onclick="app.setDevice('tablet', this)">Tablet</button>
+        <button class="sim-btn" onclick="app.setDevice('watch', this)">Watch</button>
+        <div style="width:1px; background:rgba(255,255,255,0.2); margin:0 5px;"></div>
+        <button class="sim-btn action" onclick="app.simulateIncomingCall()">Simulate Call</button>
     </div>
 
     <script>
@@ -247,13 +292,12 @@
         const app = {
             state: {
                 width: 0, height: 0, tilt: { x: 0, y: 0 }, targetTilt: { x: 0, y: 0 },
-                gyroSensitivity: 2.0, inputMode: 'gyro', time: 0, 
+                gyroSensitivity: 3.0, inputMode: 'gyro', time: 0, 
                 colorShift: 0, colorShiftTarget: 0, 
                 audioLevel: 0, audioEnabled: false, audioStream: null, 
                 callState: 'idle'
             },
             
-            // DOM Refs
             dom: {
                 screen: document.getElementById('screen-content'),
                 container: document.getElementById('sim-container'),
@@ -263,20 +307,19 @@
                 callTimer: document.getElementById('callTimer'),
                 btnConnect: document.getElementById('btnConnect'),
                 btnAudio: document.getElementById('btnAudio'),
-                settingsPanel: document.getElementById('settingsPanel')
+                settingsPanel: document.getElementById('settingsPanel'),
+                statusText: document.getElementById('statusText')
             },
 
             // --- LIFECYCLE ---
             init() {
-                // Setup resize observer for dynamic changes
-                const resizeObserver = new ResizeObserver(() => this.resize());
-                resizeObserver.observe(this.dom.screen);
-
+                // Resize observer for seamless device switching
+                new ResizeObserver(() => this.resize()).observe(this.dom.screen);
                 this.graphics.init();
                 this.bindEvents();
-                this.resize(); // Initial resize
+                this.setDevice('phone', document.querySelector('.sim-btn.active'));
                 
-                // Fallback to mouse if no gyro
+                // Mouse Fallback check
                 if(!window.DeviceOrientationEvent) this.state.inputMode = 'mouse';
                 
                 requestAnimationFrame(() => this.loop());
@@ -286,12 +329,11 @@
                 this.dom.container.className = 'device-' + type;
                 document.querySelectorAll('.sim-btn').forEach(b => b.classList.remove('active'));
                 if(btn) btn.classList.add('active');
-                // The ResizeObserver will catch the dimension change automatically
+                // Allow CSS transition to settle slightly before hard resize calc logic runs via observer
             },
 
             resize() {
                 const s = this.state;
-                // Important: Resize to current SCREEN CONTENT dimensions, not full window
                 s.width = this.dom.screen.clientWidth;
                 s.height = this.dom.screen.clientHeight;
                 this.graphics.resize(s.width, s.height);
@@ -301,22 +343,19 @@
             simulateIncomingCall() {
                 if(this.state.callState !== 'idle') return;
                 this.state.callState = 'incoming';
-                
-                // UI Transitions
                 this.dom.homeUI.classList.add('hidden');
                 this.dom.incomingUI.classList.add('active');
-                
-                // Aurora Effect: Slight Red shift for alert
-                this.state.colorShiftTarget = 0.3;
+                this.state.colorShiftTarget = 0.3; // Alert color
             },
 
             acceptCall() {
                 if(this.state.callState !== 'incoming') return;
                 this.state.callState = 'active';
-                
-                // UI
                 this.dom.incomingUI.classList.remove('active');
                 this.dom.activeUI.classList.add('active');
+                
+                // Auto-Enable Audio on answer for effect
+                if(!this.state.audioEnabled) this.toggleAudio();
                 
                 // Start Timer
                 let sec = 0;
@@ -327,11 +366,7 @@
                     this.dom.callTimer.innerText = `${m}:${s}`;
                 }, 1000);
 
-                // Auto-Enable Audio for Effect if user permits
-                if(!this.state.audioEnabled) this.toggleAudio();
-                
-                // Aurora Effect: Full connection color
-                this.state.colorShiftTarget = 0.8;
+                this.state.colorShiftTarget = 0.8; // Connected color
             },
 
             declineCall() {
@@ -343,20 +378,17 @@
                 clearInterval(this.callInterval);
                 this.dom.callTimer.innerText = "00:00";
                 
-                // UI Reset
                 this.dom.incomingUI.classList.remove('active');
                 this.dom.activeUI.classList.remove('active');
                 this.dom.homeUI.classList.remove('hidden');
                 this.dom.btnConnect.classList.remove('dissolved');
-
-                // Aurora Reset
                 this.state.colorShiftTarget = 0.0;
                 
-                // Stop Audio to save battery/privacy
+                // Disable audio on end for privacy
                 if(this.state.audioEnabled) this.toggleAudio();
             },
 
-            // --- GRAPHICS ENGINE (Canvas 2D - Robust) ---
+            // --- GRAPHICS ENGINE (Robust Canvas 2D) ---
             graphics: {
                 ctxBg: null, ctxAurora: null, ctxTerrain: null,
                 stars: [],
@@ -365,10 +397,6 @@
                     this.ctxBg = document.getElementById('bgCanvas').getContext('2d');
                     this.ctxAurora = document.getElementById('auroraCanvas').getContext('2d');
                     this.ctxTerrain = document.getElementById('terrainCanvas').getContext('2d');
-                    this.initAssets();
-                },
-
-                initAssets() {
                     for(let i=0; i<400; i++) this.stars.push({x:Math.random(), y:Math.random(), s:Math.random()*1.5, a:Math.random(), t:Math.random()*0.02});
                 },
 
@@ -383,7 +411,7 @@
                 render(s) {
                     const w = s.width, h = s.height;
                     
-                    // 1. Background
+                    // 1. Background (Stars)
                     const ctx = this.ctxBg;
                     ctx.clearRect(0,0,w,h);
                     const px = -s.tilt.x * 50, py = -s.tilt.y * 50;
@@ -396,15 +424,14 @@
                     });
                     ctx.globalAlpha = 1;
 
-                    // 2. Aurora (2D Ribbon)
+                    // 2. Aurora (Ribbons)
                     const ctxA = this.ctxAurora;
                     ctxA.clearRect(0,0,w,h);
                     
-                    // Voice Inversion Logic
+                    // Voice Inversion Math
                     let invert = 0;
-                    if(s.callState === 'active' && s.audioLevel > 0.05) {
-                        // Sensitive inversion based on audio volume
-                        invert = Math.min(1, s.audioLevel * 5.0); 
+                    if(s.callState === 'active' && s.audioLevel > 0.02) {
+                        invert = Math.min(1, s.audioLevel * 6.0); // Boosted sensitivity for visible effect
                     }
 
                     const shiftX = -s.tilt.x * 40; const shiftY = -s.tilt.y * 20;
@@ -413,8 +440,8 @@
 
                     for(let i=0; i<2; i++) {
                         ctxA.beginPath();
-                        const margin = 300; 
-                        const points = 50;
+                        const margin = 200; // Extra draw margin
+                        const points = 40;
                         const spacing = (w + margin*2)/points;
                         
                         for(let j=0; j<=points; j++) {
@@ -430,28 +457,22 @@
                         
                         ctxA.lineTo(w+margin, 0); ctxA.lineTo(-margin, 0); ctxA.closePath();
                         
-                        // Gradient Construction
                         const grad = ctxA.createLinearGradient(0, h*0.2, 0, h*0.8);
                         
-                        // Base Colors
-                        let r1=0, g1=255, b1=150; // Teal base
-                        let r2=255, g2=50, b2=255; // Pink/Purple
-                        
-                        // Mix based on state shift (Call Active State)
-                        let r = r1*(1-shift) + r2*shift;
-                        let g = g1*(1-shift) + g2*shift;
-                        let b = b1*(1-shift) + b2*shift;
+                        // Base (Teal/Purple)
+                        let r = (i===0?0:100)*(1-shift) + 255*shift;
+                        let g = (i===0?255:50)*(1-shift) + 100*shift;
+                        let b = (i===0?150:255)*(1-shift) + 200*shift;
 
-                        // Voice Inversion (Red/Orange)
+                        // Inversion Mix (Orange/Red)
                         if(invert > 0) {
-                            // Invert colors towards Red/Orange spectrum
                             r = r*(1-invert) + 255*invert;
                             g = g*(1-invert) + 60*invert;
                             b = b*(1-invert) + 0*invert;
                         }
 
                         grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
-                        grad.addColorStop(0.4, `rgba(${r},${g},${b},0.1)`);
+                        grad.addColorStop(0.4, `rgba(${r},${g},${b},0.15)`);
                         grad.addColorStop(0.8, `rgba(${r},${g},${b},0.4)`);
                         grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
                         
@@ -468,10 +489,12 @@
                     if(!tilt) tilt = {x:0, y:0};
                     const px = -tilt.x * 100; const py = -tilt.y * 50;
                     ctx.save(); ctx.translate(px, py);
-                    ctx.beginPath(); ctx.moveTo(-200, h*0.8);
+                    ctx.beginPath(); ctx.moveTo(-200, h*0.85);
                     
                     let x = -200; let y = h*0.85;
+                    // Deterministic pseudo-random for stable terrain redraw
                     let seed = 1; const rand = () => { var x = Math.sin(seed++) * 10000; return x - Math.floor(x); }
+                    
                     while(x < w+200) {
                         let nx = x+40; let ny = y + (rand()-0.5)*30;
                         ny = Math.min(Math.max(ny, h*0.75), h*0.95);
@@ -488,17 +511,12 @@
             // --- AUDIO & INPUT ---
             async toggleAudio() {
                 if(this.state.audioEnabled) {
-                    if(this.state.audioStream) {
-                        this.state.audioStream.getTracks().forEach(t=>t.stop());
-                        this.state.audioStream = null;
-                    }
-                    if (this.audioCtx && this.audioCtx.state !== 'closed') {
-                        await this.audioCtx.close();
-                        this.audioCtx = null;
-                    }
+                    if(this.audioStream) this.audioStream.getTracks().forEach(t=>t.stop());
+                    if(this.audioCtx && this.audioCtx.state !== 'closed') await this.audioCtx.close();
                     this.state.audioEnabled = false;
                     this.state.audioLevel = 0;
                     this.dom.btnAudio.classList.remove('active');
+                    this.dom.statusText.innerText = "Mic: Off";
                 } else {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -511,7 +529,12 @@
                         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                         this.state.audioEnabled = true;
                         this.dom.btnAudio.classList.add('active');
-                    } catch(e) { console.warn("Mic denied"); }
+                        this.dom.statusText.innerText = "Mic: Active";
+                        if(this.audioCtx.state === 'suspended') this.audioCtx.resume();
+                    } catch(e) { 
+                        console.warn("Mic denied"); 
+                        this.dom.statusText.innerText = "Mic Denied";
+                    }
                 }
             },
 
@@ -523,16 +546,20 @@
                     this.state.targetTilt.y = ((e.clientY - rect.top)/this.state.height - 0.5)*2;
                 });
                 
-                // Gyro Init
                 window.addEventListener('deviceorientation', e => {
-                    if(this.state.inputMode==='gyro') {
-                        this.state.targetTilt.x = Math.max(-1, Math.min(1, (e.gamma||0)/45));
-                        this.state.targetTilt.y = Math.max(-1, Math.min(1, ((e.beta||0)-45)/45));
+                    if(this.state.inputMode!=='gyro') return;
+                    // Auto-fallback if values are null
+                    if(e.gamma === null) { 
+                        this.state.inputMode = 'mouse';
+                        this.dom.statusText.innerText = "Gyro Missing - Mouse Mode";
+                        return;
                     }
+                    const sens = this.state.gyroSensitivity;
+                    this.state.targetTilt.x = Math.max(-1, Math.min(1, ((e.gamma||0)/45) * sens));
+                    this.state.targetTilt.y = Math.max(-1, Math.min(1, (((e.beta||0)-45)/45) * sens));
                 });
 
                 this.dom.btnConnect.addEventListener('click', () => {
-                    // Connect Button -> Simulates Incoming Call
                     this.simulateIncomingCall();
                 });
 
@@ -550,11 +577,9 @@
                     s.audioLevel = (sum / this.dataArray.length) / 255.0;
                 }
 
-                // Physics
                 s.tilt.x += (s.targetTilt.x - s.tilt.x) * 0.05;
                 s.tilt.y += (s.targetTilt.y - s.tilt.y) * 0.05;
 
-                // Color Shift Transition
                 if(s.colorShiftTarget > 0) {
                     s.colorShift += (s.colorShiftTarget - s.colorShift) * 0.05;
                     if(Math.abs(s.colorShiftTarget - s.colorShift) < 0.01 && s.callState==='idle') s.colorShiftTarget = 0;
@@ -562,6 +587,18 @@
 
                 this.graphics.render(s);
                 requestAnimationFrame(() => this.loop());
+            },
+            
+            setMode(mode, btn) {
+                this.state.inputMode = mode;
+                // If gyro selected, try to request permission
+                if(mode === 'gyro' && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(r => this.dom.statusText.innerText = r === 'granted' ? "Gyro Active" : "Gyro Denied")
+                        .catch(e => console.log(e));
+                }
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                if(btn) btn.classList.add('active');
             }
         };
 
